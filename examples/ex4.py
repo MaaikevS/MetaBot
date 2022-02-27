@@ -19,7 +19,11 @@ w = openMINDS_wrapper()
 # Make an output folder based on the current data and time
 now = datetime.now()
 output_path = "createdInstances" + "_" + now.strftime("%d%m%Y_%H%M") + "\\"
-os.mkdir(output_path) 
+if os.path.isdir(output_path):
+    print("Output folder already exists")
+else:
+    print("Output folder does not exist, making folder")        
+    os.mkdir(output_path) 
 
 # Import subject information from a json file
 input_path = "example_subjects.json"
