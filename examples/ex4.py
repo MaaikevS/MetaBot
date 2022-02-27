@@ -22,7 +22,7 @@ output_path = "createdInstances" + "_" + now.strftime("%d%m%Y_%H%M") + "\\"
 os.mkdir(output_path) 
 
 # Import subject information from a json file
-input_path = "\\examples\\example_subjects.json"
+input_path = "example_subjects.json"
 subjectInfo = w.importSubjectsFromJSON(input_path)
 
 # Save an overview of the imported subject information with the sample data
