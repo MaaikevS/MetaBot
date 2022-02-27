@@ -38,7 +38,7 @@ demofiles += glob.glob(os.path.join("examples", "*", "*", "*", "*.xml*"))
 # Don't bother user with test files
 [demofiles.remove(f) for f in demofiles if "test_" in f]
 
-setup(name="simplepackage",
+setup(name="metabot",
       version=version,
       author="Maaike van Swieten",
       author_email="mvanswieten@outlook.com",
