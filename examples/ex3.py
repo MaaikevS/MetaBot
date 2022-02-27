@@ -22,11 +22,11 @@ data = {}
 # Fill in the metadata for the subject
 data["subjectType"] = "subject"
 data["subjectName"] = "sub-01"
-data["subjectInternalID"] = ""
+data["subjectInternalID"] = None
 data["subjectStateNum"] = 1
-data["subjectStateNames"] = ""
-data["strainName"] = ""
-data["strainAtid"] = ""
+data["subjectStateNames"] = None
+data["strainName"] = None
+data["strainAtid"] = None
 data["biologicalSex"] = "female"
 data["ageCategory"] = "adult"
 data["subjectAttribute"] = "awake, control"
@@ -34,7 +34,7 @@ data["subjectAttribute"] = "awake, control"
 # Fill in the metadata for the sample
 data["specimenType"] = "tsc"
 data["sampleName"] = "sub-01_layer1"
-data["sampleInternalID"] = ""
+data["sampleInternalID"] = None
 data["sampleType"] = "tissueSlice"
 data["region"] = "WHSSD_brain"
 data["origin"] = "brain"
