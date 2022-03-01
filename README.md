@@ -1,7 +1,7 @@
 # MetaBot #
 *Using the openMINDS package to create instances automatically*
 
-MetaBot is a simple package that allows you to create instances automatically in an openMINDS conform manner, without the need to know the openMINDS package. Metadata can be imported from a JSON file (for subject metadata), CSV file (for subject metadata), a template xlsx file (for both subjects and sample metadata) or by directly defining it in a python dictionary.
+MetaBot is a simple package that allows you to automatically generate openMINDS compatible metadata instances, without the need to know the functionalities of the openMINDS package. Metadata can be imported from a JSON file (for subject metadata), CSV file (for subject metadata), a template xlsx file (for both subjects and sample metadata) or by directly defining it in a python dictionary.
 
 ## Installation ##
 
