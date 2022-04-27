@@ -18,7 +18,8 @@ import os
 import pandas as pd
 import glob
 from datetime import datetime
- 
+from getpass import getpass
+
 from metabot import openMINDS_wrapper
 
 w = openMINDS_wrapper()
@@ -50,8 +51,8 @@ metadata_file = input("What is the name of your specimen file (e.g. specimen_tem
 fileLocation = fpath + "\\" + metadata_file
 
 specimenInfo = pd.read_excel(fileLocation)
-subjectInfo = specimenInfo.iloc[:,:10].drop_duplicates('subjectName', keep = 'first').reset_index(drop=True)
-sampleInfo = specimenInfo.iloc[:,10:].join(subjectInfo.subjectName)
+subjectInfo = specimenInfo.iloc[:,:14].drop_duplicates('subjectName', keep = 'first').reset_index(drop=True)
+sampleInfo = specimenInfo.iloc[:,14:].join(subjectInfo.subjectName)
 
 # Choose if you want to create subject, sample or both instances.
 answer = 0
@@ -87,7 +88,7 @@ print("\nOverview file is saved in the output folder \n")
 answer = input("Would you like to upload the instances you created to the KGE? yes (y) or no (n) " ) 
 
 if answer == "y":
-    token = input("Please enter your KG token (or Enter to skip uploading to the KG): ")
+    token = getpass(prompt="Please enter your KG token (or Enter to skip uploading to the KG): ")
     instances_fnames = glob.glob(output_path + "*\\*", recursive = True)
 
     print("\nUploading data now:\n")
@@ -97,6 +98,3 @@ if answer == "y":
         
 elif answer == "n":
     print("\nDone!")
-
-   
-        
