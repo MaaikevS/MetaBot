@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created Dec 2021
-
 File containing openMINDS_wrapper class
     
 Methods:
@@ -20,10 +19,7 @@ Methods:
         upload instances to KGE
     delete : 
         delete instances from KGE
-
-
 @author: mvanswieten
-
 """
 
 import json
@@ -45,12 +41,10 @@ class openMINDS_wrapper:
         ----------
         input_path : string
             path to where the JSON file is located.
-
         Returns
         -------
         df : pandas dataframe
             DataFrame with subject metadata.
-
         
         """
         df = pd.DataFrame([])
@@ -99,12 +93,10 @@ class openMINDS_wrapper:
         ----------
         input_path : string
             path to where the CSV file is located.
-
         Returns
         -------
         df : pandas dataframe
             DataFrame with subject metadata.
-
         
         """
         
@@ -123,12 +115,10 @@ class openMINDS_wrapper:
             DataFrame with subject metadata
         sampleInfo : pandas dataframe
             DataFrame with sample metadata
-
         Returns
         -------
         df : pandas dataframe
             Merged DataFrame with subject and sample metadata.
-
         
         """
         
@@ -174,13 +164,11 @@ class openMINDS_wrapper:
             DataFrame containing subject metadata
         output_path : string
             Location files should be saved in
-
         Returns
         -------
         data : Pandas DataFrame
             DataFrame containing subject metadata including information about 
             the newly generated instances
-
         """
         
         
@@ -209,7 +197,7 @@ class openMINDS_wrapper:
 
             #### Subject State ####
             
-            # Create a sample state name(s) first    
+            # Create a subject state name(s) first    
             stateName = []
             if pd.isnull(df.subjectStateNames[i]):
                 print(">>> No subject state names defined, making generic ones <<<")
@@ -244,7 +232,7 @@ class openMINDS_wrapper:
                             return
                         stateName.append(str(subject_name) + "_" + df.subjectStateNames[i])
 
-            # Create sample state(s)
+            # Create subject state(s)
             states = []  
             stateIDs = []
             for state_num in range(len(stateName)):  
@@ -252,7 +240,6 @@ class openMINDS_wrapper:
                 state_dict[subject_name] = getattr(mycol, statemethod)(
                     ageCategory = [{"@id" : "https://openminds.ebrains.eu/instances/ageCategory/" + df.ageCategory[i]}])    
                 mycol.get(state_dict[subject_name]).lookupLabel = stateName[state_num]
-                # mycol.get(state_dict[subject_name]).ageCategory = [{"@id" : "https://openminds.ebrains.eu/instances/ageCategory/" + df.ageCategory[i]}]
                 
                 # If state attribute is defined, add to collection
                 attributeName = []
@@ -273,6 +260,27 @@ class openMINDS_wrapper:
                 states.append({"@id": state_dict[subject_name]})
                 stateIDs.append(state_dict[subject_name].split("/")[-1])
              
+            # Add the age of the animal
+            if pd.isnull(df.ageValue[i]) and pd.isnull(df.ageUnit[i]):
+                print("No age information available")
+                age = None
+            else:
+                age = str(int(df.ageValue[i])) + " " + str(df.ageUnit[i])
+                mycol.get(state_dict[subject_name]).age = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValue",
+                                                            "unit" : {"@id": "https://openminds.ebrains.eu/instances/unit/" + str(df.ageUnit[i])}, 
+                                                            "value" : int(df.ageValue[i])
+                                                           }]
+            
+            #add the weight of the animal
+            if pd.isnull(df.weightValue[i]) and pd.isnull(df.weightUnit[i]):
+                print("No weight information available")
+                weight = None
+            else:
+                weight = str(int(df.weightValue[i])) + " " + str(df.weightUnit[i])
+                mycol.get(state_dict[subject_name]).weight = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValue",
+                                                               "unit" : {"@id": "https://openminds.ebrains.eu/instances/unit/" + str(df.weightUnit[i])}, 
+                                                               "value" : int(df.weightValue[i])
+                                                               }]
             #### Subject ####
             
             print("Creating sample " + subject_name)
@@ -324,6 +332,8 @@ class openMINDS_wrapper:
                                              "strainName" : strain_name,
                                              "strainAtid" : strain_atid,
                                              "biologicalSex" : sex,
+                                             "age" : age,
+                                             "weight" : weight,
                                              "subjectAttribute" : attribute},                
                                             index=[0]), 
                                ignore_index=True)
@@ -344,13 +354,11 @@ class openMINDS_wrapper:
             DataFrame containing sample metadata
         output_path : string
             Location files should be saved in
-
         Returns
         -------
         data : Pandas DataFrame
             DataFrame containing sample metadata including information about 
             the newly generated instances
-
         """
         
         data = pd.DataFrame([])
@@ -551,13 +559,11 @@ class openMINDS_wrapper:
             Authorisation token to get access to the KGE
         space_name : string
             Space that the instances needs to be uploaded to, e.g. "dataset", "common", etc.
-
         Returns
         -------
         response : dictionary
             For each UUID as response is stored that indications if the upload 
             was successful
-
         """
         
         hed = {"accept": "*/*",
@@ -613,11 +619,11 @@ class openMINDS_wrapper:
             print("Posting instance " + str(count)+"/"+str(len(new_instances)))
             atid = instance["@id"].split("/")[-1] 
             response[atid] = requests.post(url.format(atid), json=instance, headers=hed)
-            if response[atid] == 200:
+            if response[atid].status_code == 200:
                 print(response[atid], "OK!" )
-            elif response[atid] == 409:
+            elif response[atid].status_code == 409:
                 print(response[atid], "Instance already exists")
-            elif response[atid] == 401:
+            elif response[atid].status_code == 401:
                 print(response[atid], "Token not valid, authorisation not successful")
             else:
                 print(response[atid])
@@ -642,7 +648,6 @@ class openMINDS_wrapper:
         response : dictionary
             For each UUID as response is stored that indications if the deletion
             was successful
-
         """
         
         
@@ -670,4 +675,3 @@ class openMINDS_wrapper:
                 print(response[atid])
             
         return response
-        
