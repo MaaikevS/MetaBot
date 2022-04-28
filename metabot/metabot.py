@@ -22,6 +22,7 @@ Methods:
 @author: mvanswieten
 """
 
+from itertools import count
 import json
 import openMINDS
 import openMINDS.version_manager
@@ -128,8 +129,10 @@ class openMINDS_wrapper:
         
         for sub in range(len(sub_list)):
             
+            count_dup = 0
             idxs = df.index[df['sampleName'].str.contains(subjectInfo.subjectName[sub])]
-        
+            idxs_duplicate = df.index[df['sampleName'].duplicated(keep = False)]
+
             for i in idxs:
             
                 if not 'strainAtid' in df.columns:
@@ -142,7 +145,17 @@ class openMINDS_wrapper:
                      df.insert(i, 'studiedState', '')
                     
                 df.loc[i, "subjectName"]  = subjectInfo.subjectName[sub]
-                df.loc[i, "studiedState"] = subjectInfo.studiedState[sub]
+                # Ensure that the states have the correct ID
+                if subjectInfo.studiedState[sub].find(',') == -1:
+                    df.loc[i, "studiedState"] = subjectInfo.studiedState[sub]
+                else:
+                    studiedStates = subjectInfo.studiedState[sub].split(',')
+                    if i in idxs_duplicate:
+                        df.loc[i, "studiedState"] = studiedStates[0]
+                    else:
+                        count_dup += 1
+                        df.loc[i, "studiedState"] = studiedStates[count_dup]
+                    
                 if "strainAtid" in subjectInfo.columns:
                     df.loc[i, "strainAtid"] = subjectInfo.strainAtid[sub]
                 else:
@@ -171,18 +184,20 @@ class openMINDS_wrapper:
             the newly generated instances
         """
         
-        
+        df_original = df.copy()
         data = pd.DataFrame([])
         
         state_dict = {}
         subject_dict = {} 
-        
-        for i in range(len(df.subjectName)):
+        df = df.drop_duplicates('subjectName', keep = 'first').reset_index(drop=True) 
+        uniqueSubs = df.subjectName.unique()
+
+        for i in range(len(uniqueSubs)):
             
             # Print the name of the instance
-            print("\n Creating instances for subject: " + str(df.subjectName[i]) + "\n")
+            print("\n Creating instances for subject: " + str(uniqueSubs[i]) + "\n")
             
-            subject_name = df.subjectName[i]
+            subject_name = uniqueSubs[i]
                     
             # Define the openMINDS function based on the specimenType
             if df.subjectType[i] == "subject" :
@@ -197,40 +212,50 @@ class openMINDS_wrapper:
 
             #### Subject State ####
             
-            # Create a subject state name(s) first    
+            # Create a subject state name(s) first 
+            stateInfo = df_original[df_original.subjectName == uniqueSubs[i]].drop_duplicates('timePointName', keep = 'first').reset_index(drop=True) 
+            numberOfStates = len(stateInfo)
             stateName = []
-            if pd.isnull(df.subjectStateNames[i]):
-                print(">>> No subject state names defined, making generic ones <<<")
-                if pd.isnull(df.subjectStateNum[i]):
-                    print(">>> Number of subject states is not defined, please check <<<")
-                    return
-                else: 
-                    for num in range(int(df.subjectStateNum[i])):
-                        if num < 10:
-                            stateName.append(str(subject_name) + "_" + "state-0" + str(num+1))
-                        else: 
-                            stateName.append(str(subject_name) + "_" + "state-" + str(num+1))
-                    
-            else:
-                if pd.isnull(df.subjectStateNum[i]):
-                    print(">>> Number of states is not defined, please check <<<")
-                    return
+            for state in range(numberOfStates):
+                if pd.isnull(stateInfo.timePointName[state]):
+                    print(">>> No subject state name defined, making generic one <<<")
+                    stateName.append(str(subject_name) + "_" + "state-0" + str(stateInfo.timePoint[state]))
                 else:
-                    # Split up the state names if there is more than one state
-                    if df.subjectStateNames[i].find(','):
-                        # First check if there are enough names given for the number of states
-                        if df.subjectStateNum[i] != len(df.subjectStateNames[i].split(",")):
-                            print("Number of states does not match the number of state names given! Please check ")
-                            return
+                    stateName.append(str(stateInfo.timePointName[state]))
+
+            
+            # if pd.isnull(df.subjectStateNames[i]):
+            #     print(">>> No subject state names defined, making generic ones <<<")
+            #     if pd.isnull(df.subjectStateNum[i]):
+            #         print(">>> Number of subject states is not defined, please check <<<")
+            #         return
+            #     else: 
+            #         for num in range(int(df.subjectStateNum[i])):
+            #             if num < 10:
+            #                 stateName.append(str(subject_name) + "_" + "state-0" + str(num+1))
+            #             else: 
+            #                 stateName.append(str(subject_name) + "_" + "state-" + str(num+1))
+                    
+            # else:
+            #     if pd.isnull(df.subjectStateNum[i]):
+            #         print(">>> Number of states is not defined, please check <<<")
+            #         return
+            #     else:
+            #         # Split up the state names if there is more than one state
+            #         if df.subjectStateNames[i].find(','):
+            #             # First check if there are enough names given for the number of states
+            #             if df.subjectStateNum[i] != len(df.subjectStateNames[i].split(",")):
+            #                 print("Number of states does not match the number of state names given! Please check ")
+            #                 return
         
-                        for stateNames in df.subjectStateNames[i].split(","):
-                            stateName.append(str(subject_name) + "_" + stateNames.strip())
-                    else:
-                        # Check if the number of states matches the number of given state names
-                        if df.subjectStateNum[i] != len(df.subjectStateNames[i]):
-                            print("Number of states does not match the number of state names given! Please check ")
-                            return
-                        stateName.append(str(subject_name) + "_" + df.subjectStateNames[i])
+            #             for stateNames in df.subjectStateNames[i].split(","):
+            #                 stateName.append(str(subject_name) + "_" + stateNames.strip())
+            #         else:
+            #             # Check if the number of states matches the number of given state names
+            #             if df.subjectStateNum[i] != len(df.subjectStateNames[i]):
+            #                 print("Number of states does not match the number of state names given! Please check ")
+            #                 return
+            #             stateName.append(str(subject_name) + "_" + df.subjectStateNames[i])
 
             # Create subject state(s)
             states = []  
@@ -259,7 +284,15 @@ class openMINDS_wrapper:
 
                 states.append({"@id": state_dict[subject_name]})
                 stateIDs.append(state_dict[subject_name].split("/")[-1])
-             
+
+                # data = data.append(pd.DataFrame({"subjectName" : subject_name,
+                #                     "subjectAtid" : subject_dict[subject_name].split("/")[-1],
+                #                     "subjectInternalID" : internalID,
+                #                     "studiedState" : state_dict[subject_name].split("/")[-1],
+                #                     "subjectStateNames" : stateName[state_num]}, 
+                #                     index=[0]), 
+                #                     ignore_index=True) 
+
             # Add the age of the animal
             if pd.isnull(df.ageValue[i]) and pd.isnull(df.ageUnit[i]):
                 print("No age information available")
@@ -372,63 +405,42 @@ class openMINDS_wrapper:
             # Only select the samples of one subject
             samples = df[df['sampleName'].str.contains(sub)].reset_index(drop=True)
             
-            for i in range(len(samples)):
-               
-                # Print the instance name
-                if pd.isnull(str(samples.sampleName[i])):
-                    print("\n Creating instances for subject " + str(sub) + " tissue sample " + str(i + 1) + "\n")
-                else:
-                    print("\n Creating instances for subject " + str(sub) + " tissue sample " + str(samples.sampleName[i]) + "\n")
+            # Select all the states that belong to one sample
+            sampleStates = samples.sampleName.unique()
+
+            for i in range(len(sampleStates)):
+                s = sampleStates[i]
+                stateInfo = samples[samples.sampleName == s].reset_index(drop=True)
+                sample_name = s
+                print("\n Creating instances for subject " + str(sub) + " tissue sample " + str(s) + "\n")
+
+                numberOfStates = len(stateInfo)
+                stateName = []
+                for state in range(numberOfStates):
+                    if pd.isnull(stateInfo.timePointSampleName[state]):
+                        print(">>> No subject state name defined, making generic one <<<")
+                        stateName.append(str(sample_name) + "_" + "state-0" + str(stateInfo.timePointSample[state]))
+                    else:
+                        stateName.append(str(sample_name) + "_" + str(stateInfo.timePointSampleName[state]))
+                # # Print the instance name
+                # if pd.isnull(str(samples.sampleName[i])):
+                #     print("\n Creating instances for subject " + str(sub) + " tissue sample " + str(i + 1) + " state " + + \n")
+                # else:
+                #     print("\n Creating instances for subject " + str(sub) + " tissue sample " + str(s) + "\n")
                 
-                sample_name = samples.sampleName[i]
+                # sample_name = samples.sampleName[i]
 
                 # Define openMINDS function based on specimenType
-                if samples.specimenType[i] == "tsc" :
+                if stateInfo.specimenType[state] == "tsc" :
                     statemethod = 'add_core_tissueSampleCollectionState'
                     samplemethod = 'add_core_tissueSampleCollection'
-                elif samples.specimenType[i] == "ts" :
+                elif stateInfo.specimenType[state] == "ts" :
                     statemethod = 'add_core_tissueSampleState'
-                    samplemethod = 'add_core_tissueSample'    
-            
-                # # initiate the collection into which you will store all metadata instances
+                    samplemethod = 'add_core_tissueSample' 
+                
+                # initiate the collection into which you will store all metadata instances
                 mycol = self.helper.create_collection()
-            
-                # Create a sample state name(s) first    
-                stateName = []
-            
-                if pd.isnull(samples.sampleStateNames[i]):
-                    print(">>> No state names defined, making generic ones <<<")
-                    if pd.isnull(samples.sampleStateNum[i]):
-                        print(">>> Number of states is not defined, please check <<<\n")
-                        return
-                    else: 
-                        for num in range(int(samples.sampleStateNum[i])):
-                            if num < 10:
-                                stateName.append(str(sample_name) + "_" + "state-0" + str(num+1))
-                            else: 
-                                stateName.append(str(sample_name) + "_" + "state-" + str(num+1))
-                        
-                else:
-                    if pd.isnull(samples.sampleStateNum[i]):
-                        print(">>> Number of states is not defined, please check <<<\n")
-                        return
-                    else:
-                        # Split up the state names if there is more than one state
-                        if samples.sampleStateNames[i].find(','):
-                            # First check if there are enough names given for the number of states
-                            if samples.sampleStateNum[i] != len(samples.sampleStateNames[i].split(",")):
-                                print(">>> Number of states does not match the number of state names given! Please check <<<\n")
-                                return
-            
-                            for stateNames in samples.sampleStateNames[i].split(","):
-                                stateName.append(str(sample_name) + "_" + stateNames.strip())
-                        else:
-                            # Check if the number of states matches the number of given state names
-                            if samples.sampleStateNum[i] != len(samples.sampleStateNames[i]):
-                                print(">>> Number of states does not match the number of state names given! Please check <<<\n")
-                                return
-                            stateName.append(str(sample_name) + "_" + samples.sampleStateNames[i])
-            
+
                 # Create sample state(s)
                 states = []  
                 stateIDs = []
@@ -437,115 +449,227 @@ class openMINDS_wrapper:
                     print("creating state " + str(stateName[state_num]))
                     state_dict[sample_name] = getattr(mycol, statemethod)()    
                     mycol.get(state_dict[sample_name]).lookupLabel = stateName[state_num]
-                    mycol.get(state_dict[sample_name]).descendedFrom = [{"@id" : "https://kg.ebrains.eu/api/instances/" + df.studiedState[i]}]
-                    
+
+                    mycol.get(state_dict[sample_name]).descendedFrom = [{"@id" : "https://kg.ebrains.eu/api/instances/" + stateInfo.subjectAtid[state_num]}]
+                        
                     # If state attribute is defined, add to collection
                     attributeName = []
-                    if pd.isnull(samples.sampleAttribute[i]):
+                    if pd.isnull(stateInfo.sampleAttribute[state_num]):
                         print(">>> No state attribute available <<<")
                         attribute = None
                     else:
-                        if samples.sampleAttribute[i].find(','):
-                            for attributes in samples.sampleAttribute[i].split(","):
+                        if stateInfo.sampleAttribute[state_num].find(','):
+                            for attributes in stateInfo.sampleAttribute[state_num].split(","):
                                 attributeName.append({"@id": "https://openminds.ebrains.eu/instances/tissueSampleAttribute/" + str(attributes.strip())})
                             mycol.get(state_dict[sample_name]).attribute = attributeName
-                            attribute = samples.sampleAttribute[i]
+                            attribute = stateInfo.sampleAttribute[state_num]
                         else:
-                            attribute = samples.sampleAttribute[i]
+                            attribute = stateInfo.sampleAttribute[state_num]
                             mycol.get(state_dict[sample_name]).attribute = [{"@id" : "https://openminds.ebrains.eu/instances/tissueSampleAttribute/" + str(attribute)}]
             
                     states.append({"@id": state_dict[sample_name]})
                     stateIDs.append(state_dict[sample_name].split("/")[-1])
+
+            # for i in range(len(samples)):
+               
+            #     # Print the instance name
+            #     if pd.isnull(str(samples.sampleName[i])):
+            #         print("\n Creating instances for subject " + str(sub) + " tissue sample " + str(i + 1) + "\n")
+            #     else:
+            #         print("\n Creating instances for subject " + str(sub) + " tissue sample " + str(samples.sampleName[i]) + "\n")
+                
+            #     sample_name = samples.sampleName[i]
+
+            #     # Define openMINDS function based on specimenType
+            #     if samples.specimenType[i] == "tsc" :
+            #         statemethod = 'add_core_tissueSampleCollectionState'
+            #         samplemethod = 'add_core_tissueSampleCollection'
+            #     elif samples.specimenType[i] == "ts" :
+            #         statemethod = 'add_core_tissueSampleState'
+            #         samplemethod = 'add_core_tissueSample'    
+            
+                # # initiate the collection into which you will store all metadata instances
+                # mycol = self.helper.create_collection()
+            
+                # # Create a sample state name(s) first  
+                # for s in samples.sampleName.unique():
+                #     stateInfo = samples[samples.sampleName == s].reset_index(drop=True) 
+                #     numberOfStates = len(stateInfo)
+                #     stateName = []
+                #     for state in range(numberOfStates):
+                #         if pd.isnull(stateInfo.timePointSampleName[state]):
+                #             print(">>> No subject state name defined, making generic one <<<")
+                #             stateName.append(str(sample_name) + "_" + "state-0" + str(stateInfo.timePointSample[state]))
+                #         else:
+                #             stateName.append(str(sample_name) + "_" + str(stateInfo.timePointSampleName[state]))
+
+                # if pd.isnull(samples.sampleStateNames[i]):
+                #     print(">>> No state names defined, making generic ones <<<")
+                #     if pd.isnull(samples.sampleStateNum[i]):
+                #         print(">>> Number of states is not defined, please check <<<\n")
+                #         return
+                #     else: 
+                #         for num in range(int(samples.sampleStateNum[i])):
+                #             if num < 10:
+                #                 stateName.append(str(sample_name) + "_" + "state-0" + str(num+1))
+                #             else: 
+                #                 stateName.append(str(sample_name) + "_" + "state-" + str(num+1))
+                        
+                # else:
+                #     if pd.isnull(samples.sampleStateNum[i]):
+                #         print(">>> Number of states is not defined, please check <<<\n")
+                #         return
+                #     else:
+                #         # Split up the state names if there is more than one state
+                #         if samples.sampleStateNames[i].find(','):
+                #             # First check if there are enough names given for the number of states
+                #             if samples.sampleStateNum[i] != len(samples.sampleStateNames[i].split(",")):
+                #                 print(">>> Number of states does not match the number of state names given! Please check <<<\n")
+                #                 return
+            
+                #             for stateNames in samples.sampleStateNames[i].split(","):
+                #                 stateName.append(str(sample_name) + "_" + stateNames.strip())
+                #         else:
+                #             # Check if the number of states matches the number of given state names
+                #             if samples.sampleStateNum[i] != len(samples.sampleStateNames[i]):
+                #                 print(">>> Number of states does not match the number of state names given! Please check <<<\n")
+                #                 return
+                #             stateName.append(str(sample_name) + "_" + samples.sampleStateNames[i])
+            
+                    # # Create sample state(s)
+                    # states = []  
+                    # stateIDs = []
+                    # for state_num in range(len(stateName)):
+                        
+                    #     print("\ncreating state " + str(stateName[state_num]))
+                    #     state_dict[sample_name] = getattr(mycol, statemethod)()    
+                    #     mycol.get(state_dict[sample_name]).lookupLabel = stateName[state_num]
+                        
+                        # # Add the correct studied states to the sample
+                        # studiedState = []
+                        # if df.studiedState[i].find(','):
+                        #     for studied_state in df.studiedState[i].split(","):
+                        #         studiedState.append({"@id": "https://openminds.ebrains.eu/instances/" + str(studied_state.strip())})
+                        #     # mycol.get(state_dict[sample_name]).studiedState = studiedState
+                        # else:
+                        #     # mycol.get(state_dict[sample_name]).studiedState = [{"@id" : "https://openminds.ebrains.eu/instances/" + str(attribute)}]
+                        #     studiedState = 
+
+                        # states.append({"@id": state_dict[sample_name]})
+                        # stateIDs.append(state_dict[sample_name].split("/")[-1])
+
+                        # mycol.get(state_dict[sample_name]).descendedFrom = [{"@id" : "https://kg.ebrains.eu/api/instances/" + df.studiedState[i]}]
+                        
+                        # # If state attribute is defined, add to collection
+                        # attributeName = []
+                        # if pd.isnull(samples.sampleAttribute[i]):
+                        #     print(">>> No state attribute available <<<")
+                        #     attribute = None
+                        # else:
+                        #     if samples.sampleAttribute[i].find(','):
+                        #         for attributes in samples.sampleAttribute[i].split(","):
+                        #             attributeName.append({"@id": "https://openminds.ebrains.eu/instances/tissueSampleAttribute/" + str(attributes.strip())})
+                        #         mycol.get(state_dict[sample_name]).attribute = attributeName
+                        #         attribute = samples.sampleAttribute[i]
+                        #     else:
+                        #         attribute = samples.sampleAttribute[i]
+                        #         mycol.get(state_dict[sample_name]).attribute = [{"@id" : "https://openminds.ebrains.eu/instances/tissueSampleAttribute/" + str(attribute)}]
+                
+                        # states.append({"@id": state_dict[sample_name]})
+                        # stateIDs.append(state_dict[sample_name].split("/")[-1])
                  
                 
                 # Create the sample and link the sample state
                 print("Creating sample " + sample_name)
                 
-                if not df.strainAtid[i]:
+                if not stateInfo.strainAtid[state_num]:
                     print("No strain identifier found, please check 'strainAtid' or add manually")
                     strain_info = None
                     strain_atid = None
 
                 else:
-                    strain_atid = df.strainAtid[i]
+                    strain_atid = stateInfo.strainAtid[state_num]
                     strain_atid_url = "https://kg.ebrains.eu/api/instances/" + str(strain_atid)
                     strain_info = [{"@id": strain_atid_url}]
                         
                 # check if the origin is an organ or cell type
-                if str(samples.origin[i]) == "brain" or str(samples.origin[i]) == "muscle":
-                    origin = "https://openminds.ebrains.eu/instances/organ/" + str(samples.origin[i])
+                if str(stateInfo.origin[state_num]) == "brain" or str(stateInfo.origin[state_num]) == "muscle":
+                    origin = "https://openminds.ebrains.eu/instances/organ/" + str(stateInfo.origin[state_num])
                 else:
-                    origin = "https://openminds.ebrains.eu/instances/cellType/" + str(samples.origin[i])    
+                    origin = "https://openminds.ebrains.eu/instances/cellType/" + str(stateInfo.origin[state_num])    
                 
                 sample_dict[sample_name] = getattr(mycol, samplemethod)(
                     species = strain_info,
-                    type = [{"@id" : "https://openminds.ebrains.eu/instances/tissueSampleType/" + str(samples.sampleType[i])}],
+                    type = [{"@id" : "https://openminds.ebrains.eu/instances/tissueSampleType/" + str(stateInfo.sampleType[state_num])}],
                     origin = [{"@id" : origin}],
                     studiedState = states)
                 mycol.get(sample_dict[sample_name]).lookupLabel = str(sample_name)
             
                 # add biological sex if available
-                if pd.isnull(df.biologicalSex[i]):
+                if pd.isnull(stateInfo.biologicalSex[state_num]):
                     print('No biological sex information available')
                     sex = None
                     mycol.get(sample_dict[sample_name]).biologicalSex = sex
                 else:
-                    mycol.get(sample_dict[sample_name]).biologicalSex = [{"@id" : "https://openminds.ebrains.eu/instances/biologicalSex/" + str(df.biologicalSex[i])}]  
+                    mycol.get(sample_dict[sample_name]).biologicalSex = [{"@id" : "https://openminds.ebrains.eu/instances/biologicalSex/" + str(stateInfo.biologicalSex[state_num])}]  
                 
                 # If internal identifier is defined, add to collection
-                if pd.isnull(samples.sampleInternalID[i]):
+                if pd.isnull(stateInfo.sampleInternalID[state_num]):
                     print(">>> No internal identifier available <<<")
                     internalID = None
                 else:
-                    internalID = samples.sampleInternalID[i]
+                    internalID = stateInfo.sampleInternalID[state_num]
                 mycol.get(sample_dict[sample_name]).internalIdentifier = internalID
                 
                 # If sample is a tissue sample collection and the quantity is defined, add to collection
-                if samples.specimenType[i] == "tsc" :
-                    if pd.isnull(samples.quantity[i]):
+                if stateInfo.specimenType[state_num] == "tsc" :
+                    if pd.isnull(stateInfo.quantity[state_num]):
                         print(">>> No quantity available <<<")
                         quantity = None
                     else:
-                        quantity = int(samples.quantity[i])
+                        quantity = int(stateInfo.quantity[state_num])
                     mycol.get(sample_dict[sample_name]).quantity = quantity
                 else:
                     print(">>> No quantity available for tissue sample <<<")
                     quantity = None
             
                 # If brain region is defined, add to collection
-                if pd.isnull(samples.region[i]):
+                if pd.isnull(stateInfo.region[state_num]):
                     print(">>> No brain region available <<<")
                     brain_region = None
                 else:
-                    if (samples.region[i].split("_")[0] == "AMBA") or (samples.region[0].split("_")[0] == "WHSSD" and samples.region[0].split("_")[1] in ["v1-01", "v2", "v3-01","v3", "v4"]) or (samples.region[0].split("-")[0] == "JBA"):
+                    if (stateInfo.region[state_num].split("_")[0] == "AMBA") or (stateInfo.region[state_num].split("_")[0] == "WHSSD" and stateInfo.region[state_num].split("_")[1] in ["v1-01", "v2", "v3-01","v3", "v4"]) or (stateInfo.region[state_num].split("-")[0] == "JBA"):
                         urlstring = "https://openminds.ebrains.eu/instances/parcellationEntityVersion/"
-                    elif samples.region[i].split("_")[0] == "WHSSD" or samples.region[i].split("_")[0] == "JBA" or  samples.region[i].split("_")[0] == "DWMA":
+                    elif stateInfo.region[state_num].split("_")[0] == "WHSSD" or stateInfo.region[state_num].split("_")[0] == "JBA" or  stateInfo.region[state_num].split("_")[0] == "DWMA":
                         urlstring = "https://openminds.ebrains.eu/instances/parcellationEntity/"
                     region_dict = {}
                     brain_region = []
-                    for region in samples.region[i].split(","):
+                    for region in samples.region[state_num].split(","):
                         region_dict["@id"] = urlstring + region.strip()
                         brain_region.append(region_dict)
                 mycol.get(sample_dict[sample_name]).anatomicalLocation = brain_region
-               
+            
                 # Store all the information in an overview file
-                data = data.append(pd.DataFrame({"subjectName" : df.subjectName,
-                                                 "subjectAtid" : df.subjectAtid,
-                                                 "studiedState" : df.studiedState,
-                                                 "sampleName" : str(sample_name),
-                                                 "sampleInternalID" : internalID,
-                                                 "sampleStateNames" : ','.join(stateName),
-                                                 "sampleStateAtid" : ','.join(stateIDs),
-                                                 "sampleAtid" :  sample_dict[sample_name].split("/")[-1],
-                                                 "brainRegion" : samples.region[i],
-                                                 "quantity" : quantity,
-                                                 "sampleAttribute" : attribute},                
+                data = data.append(pd.DataFrame({"subjectName" : sub,
+                                                "subjectAtid" : stateInfo.subjectAtid[state_num],
+                                                "studiedState" : stateInfo.studiedState[state_num],
+                                                "sampleName" : str(sample_name),
+                                                "sampleInternalID" : internalID,
+                                                "sampleStateNames" : ','.join(stateName),
+                                                "sampleStateAtid" : ','.join(stateIDs),
+                                                "sampleAtid" :  sample_dict[sample_name].split("/")[-1],
+                                                "brainRegion" : stateInfo.region[state_num],
+                                                "quantity" : quantity,
+                                                "sampleAttribute" : attribute},                
                                                 index=[0]),
-                                   ignore_index=True)
+                                ignore_index=True)
                 
                 # Save the instance in the output folder
                 mycol.save(output_path) 
-          
+                      
+                filename = output_path + 'samplesCreated.csv'
+                data.to_csv(filename, index = False, header=True)  
+
         return data
     
     def upload(self, instances_fnames, token, space_name):
