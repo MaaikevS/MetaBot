@@ -537,6 +537,9 @@ class openMINDS_wrapper:
                 
                 # Save the instance in the output folder
                 mycol.save(output_path) 
+                
+                filename = output_path + 'samplesCreated.csv'
+                data.to_csv(filename, index = False, header=True)  
           
         return data
     
