@@ -47,7 +47,7 @@ else:
 
 # Import the file with the specimen metadata
 metadata_file = input("What is the name of your specimen file (e.g. specimen_template.xlsx)? ")
-fileLocation = fpath + "\\" + metadata_file
+fileLocation = fpath + metadata_file
 
 specimenInfo = pd.read_excel(fileLocation)
 subjectInfo = specimenInfo.iloc[:,:10].drop_duplicates('subjectName', keep = 'first').reset_index(drop=True)
