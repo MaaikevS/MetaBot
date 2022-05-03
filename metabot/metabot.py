@@ -123,14 +123,14 @@ class openMINDS_wrapper:
         
         """
         
-        sub_list = subjectInfo.subjectName.unique()
+        sub_list = subjectInfo.subjectInternalID.unique()
         
         df = sampleInfo.copy(deep=True)
         
         for sub in range(len(sub_list)):
 
             count_dup = 0
-            idxs = df.index[df['sampleName'].str.contains(subjectInfo.subjectName[sub])]
+            idxs = df.index[df['sampleName'].str.contains(subjectInfo.subjectInternalID[sub])]
             idxs_duplicate = df.index[df['sampleName'].duplicated(keep = False)]
 
             for i in idxs:
@@ -145,6 +145,7 @@ class openMINDS_wrapper:
                      df.insert(i, 'studiedState', '')
                     
                 df.loc[i, "subjectName"]  = subjectInfo.subjectName[sub]
+                df.loc[i, "subjectInternalID"]  = subjectInfo.subjectInternalID[sub]
                 # Ensure that the states have the correct ID
                 if subjectInfo.studiedState[sub].find(',') == -1:
                     df.loc[i, "studiedState"] = subjectInfo.studiedState[sub]
@@ -359,7 +360,7 @@ class openMINDS_wrapper:
         state_dict = {}
         sample_dict = {} 
         
-        sub_list = df.subjectName.unique()
+        sub_list = df.subjectInternalID.unique()
         
         for sub in sub_list:
             # Only select the samples of one subject
