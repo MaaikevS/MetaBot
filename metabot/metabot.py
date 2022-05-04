@@ -24,6 +24,7 @@ Methods:
 
 from itertools import count
 import json
+from lib2to3.pgen2 import token
 import openMINDS
 import openMINDS.version_manager
 import pandas as pd
@@ -558,7 +559,7 @@ class openMINDS_wrapper:
             if "studiedState" in instance.keys():
                 for ss in range(len(instance["studiedState"])):
                     atid = kg_prefix + instance["studiedState"][ss]["@id"].split("/")[-1]
-                    instance["studiedState"][0]["@id"] = atid
+                    instance["studiedState"][ss]["@id"] = atid
             if instance["@type"].endswith("Tissuesamplecollectionstate"):
                 splittype = instance["@type"].split("/")[:-1]
                 splittype.append("TissueSampleCollectionState")
@@ -649,3 +650,53 @@ class openMINDS_wrapper:
                 print(response[atid])
             
         return response
+
+    def add2dsv(self, instances2add, token, dsv_uuid, space_name):
+        """
+        
+        Parameters
+        ----------
+        instances2add : List 
+            UUIDs of the studied specimen that need to be added to the studiedSpecimen section of the dataset version
+        token : string
+            Authorisation token to get access to the KGE
+        dsv_uuid : string
+            UUID of the dataset version the specimen needs to be added to
+        space_name : string
+            Space that the instances needs to be deleted from, e.g. "dataset", "common", etc.
+        
+        Returns
+        -------
+        response : dictionary
+            For each UUID as response is stored that indications if the deletion
+            was successful
+        """
+        
+        hed = {"accept": "*/*",
+            "Authorization": "Bearer " + token
+            }
+            
+        # URL of the space the instances need to be removed from
+        url = "https://core.kg.ebrains.eu/v3-beta/instances/{}?space=" + space_name
+        kg_prefix = "https://kg.ebrains.eu/api/instances/"
+
+        studiedSpecimen = []
+        for atid in instances2add:
+            studiedSpecimen.append({"@id": kg_prefix + atid.split("\\")[-1] })
+
+        # Create the instance to patch
+        instance = {"@context": {"@vocab": "https://openminds.ebrains.eu/vocab/"},
+                    "studiedSpecimen": studiedSpecimen
+                    }
+
+        response = {}     
+        print("Adding specimen now ")
+        response[dsv_uuid] = requests.patch(url.format(dsv_uuid), json=instance, headers=hed)
+        if response[dsv_uuid].status_code == 200:
+            print(response[dsv_uuid].status_code, "OK!" )
+        elif response[dsv_uuid].status_code == 401:
+            print(response[dsv_uuid], "Token not valid, authorisation unsuccessful")
+        elif response[dsv_uuid].status_code == 404:
+            print(response[dsv_uuid], "Instance not found")
+        else:
+            print(response[dsv_uuid])
