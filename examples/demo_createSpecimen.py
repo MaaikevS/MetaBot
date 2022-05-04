@@ -52,15 +52,15 @@ fileLocation = fpath + metadata_file
 
 specimenInfo = pd.read_excel(fileLocation)
 subjectInfo = specimenInfo.iloc[:,:14]#.drop_duplicates('subjectName', keep = 'first').reset_index(drop=True)
-sampleInfo = pd.concat([specimenInfo.iloc[:,14:],subjectInfo.subjectName, subjectInfo.timePointName], axis=1) #specimenInfo.iloc[:,14:].join(subjectInfo.subjectName)
+sampleInfo = pd.concat([specimenInfo.iloc[:,14:],subjectInfo.subjectName, subjectInfo.subjectInternalID, subjectInfo.timePointName], axis=1) #specimenInfo.iloc[:,14:].join(subjectInfo.subjectName)
 
 # Choose if you want to create subject, sample or both instances.
-answer = 0
-while answer not in ["1", "2", "3"]:
-    answer = input("Do you want to create 1) subjects, 2) tissue samples, or 3) both? " )
-    if answer == "1":
+a1 = 0
+while a1 not in ["1", "2", "3"]:
+    a1 = input("Do you want to create 1) subjects, 2) tissue samples, or 3) both? " )
+    if a1 == "1":
          subject_data = w.makeSubjectCollections(subjectInfo, output_path)
-    elif answer == "2":
+    elif a1 == "2":
          a2 = 0
          while a2 not in ["1", "2"]:
              a2 = input("Do you want to create samples from a 1) JSON file or 2) csv file ? " ) 
@@ -76,7 +76,7 @@ while answer not in ["1", "2", "3"]:
                  subjectInfo = w.importSubjectsFromCSV(input_path)
                  merged_df = w.mergeInfo(subjectInfo, sampleInfo)
                  sample_data = w.makeSampleCollections(merged_df, output_path)
-    elif answer == "3":
+    elif a1 == "3":
          subject_data = w.makeSubjectCollections(subjectInfo, output_path)
          merged_df = w.mergeInfo(subject_data, sampleInfo)
          sample_data = w.makeSampleCollections(merged_df, output_path)
@@ -94,7 +94,27 @@ if answer == "y":
     print("\nUploading data now:\n")
     
     if token != "":
-        response = w.upload(instances_fnames, token, space_name = "dataset")  
+        response_upload = w.upload(instances_fnames, token, space_name = "dataset")  
+
+        # Add specimen to dataset version
+        answer = input("Would you like to add the instances you created to a dataset version? yes (y) or no (n) " ) 
+        dsv_uuid = input("What is the uuid of the dataset version you would like to add specimen to? ")
+        token = getpass(prompt="Please enter your KG token (or Enter to skip uploading to the KG): ")
+        
+        # Retrieve the specimen information of the created instances
+        if a1 == "1":
+            instances2add = subject_data.subjectAtid.unique().tolist()
+        elif a1 == "2":
+            instances2add = sample_data.sampleAtid.unique().tolist()
+        elif a1 == "3":
+            instances2add = sample_data.sampleAtid.unique().tolist() + sample_data.subjectAtid.unique().tolist()
+
+        print("\nAdding specimen to dataset version:" + dsv_uuid + "\n")
+                
+        response_addition = w.add2dsv(instances2add, token, dsv_uuid, space_name = "dataset")
+
+    else: 
+        print("No token provided")  
         
 elif answer == "n":
     print("\nDone!")
