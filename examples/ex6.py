@@ -30,4 +30,4 @@ instances_fnames = glob.glob(fpath + "*\\*", recursive = True)
 space_name = "dataset"
 
 # Upload the instances in the folder you selected
-response = w.upload(instances_fnames, token, space_name)  
+response = w.delete(instances_fnames, token, space_name)  
