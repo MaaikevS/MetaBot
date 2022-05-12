@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created Jan 2022
-Version 2
 
 
 Demonstration script for generating instances from metadata that is provided 
-in the specimen_template.xlsm file without requiring prior python experience. 
+in the specimen_template.xlsx file without requiring prior python experience. 
 Please answer the questions below.
 
 More information about this file can be found in the instruction document
@@ -21,7 +20,7 @@ import glob
 from datetime import datetime
 from getpass import getpass
 
-from metabot_v2 import openMINDS_wrapper
+from metabot import openMINDS_wrapper
 
 w = openMINDS_wrapper()
  
@@ -94,7 +93,6 @@ if answer == "y":
         # Add specimen to dataset version
         answer = input("Would you like to add the instances you created to a dataset version? yes (y) or no (n) " ) 
         dsv_uuid = input("What is the uuid of the dataset version you would like to add specimen to? ")
-        token = getpass(prompt="Please enter your KG token (or Enter to skip uploading to the KG): ")
         
         print("\nAdding specimen to dataset version:" + dsv_uuid + "\n")
 
