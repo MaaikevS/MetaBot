@@ -285,7 +285,7 @@ class openMINDS_wrapper:
                     print(">>> No subject state name defined, making generic one <<<")
                     stateName.append(str(sample_name) + "_" + "state-0" + str(stateInfo.timePoint[state]))
                 else:
-                    stateName.append(str(sample_name) + "_" + str(stateInfo.timePointName[state]))
+                    stateName.append(str(stateInfo.timePointName[state]))
 
                 # Define openMINDS function based on specimenType
                 if stateInfo.specimenType[state] == "tsc" :
