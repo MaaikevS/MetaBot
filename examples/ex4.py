@@ -3,35 +3,31 @@
 Created Feb 2022
 
 
-Example for importing subject metadata from a JSON file and saving it as a .csv file
+Example script to upload instances to the Knowledge Graph Editor
 
 
 @author: mvanswieten
 
 """
 
+import glob
 import os
+from getpass import getpass
 from metabot import openMINDS_wrapper
-from datetime import datetime
 
 w = openMINDS_wrapper()
 
-# Make an output folder based on the current data and time
-now = datetime.now()
-output_path = "createdInstances" + "_" + now.strftime("%d%m%Y_%H%M") + "\\"
-if os.path.isdir(output_path):
-    print("Output folder already exists")
-else:
-    print("Output folder does not exist, making folder")        
-    os.mkdir(output_path) 
+# Specify the folder where the instances are stored
+file_location = os.getcwd()
+fpath = input("Please define you path: ")
+     
+fpath = fpath + "\\" 
+os.chdir(fpath)
+token = getpass(prompt="Please enter your KG token (or Enter to skip uploading to the KG): ")
+instances_fnames = glob.glob(fpath + "*\\*", recursive = True)
 
-# Import subject information from a json file
-input_path = "example_subjects.json"
-subjectInfo = w.importSubjectsFromJSON(input_path)
+# Select the space the instances need to be uploaded to, e.g. dataset
+space_name = "dataset"
 
-# Save an overview of the imported subject information with the sample data
-filename = output_path + 'subjectsInfo.csv'
-subjectInfo.to_csv(filename, index = False, header=True)    
-
-
-
+# Upload the instances in the folder you selected
+response = w.delete(instances_fnames, token, space_name)  

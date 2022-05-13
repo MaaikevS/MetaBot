@@ -12,20 +12,28 @@ Example script for creating subject instances
 import os
 import pandas as pd
 from datetime import datetime
-from metabot import openMINDS_wrapper
+from metabot_v2 import openMINDS_wrapper
 
 # Store metadata
 data = {}
-data["subjectType"] = "subject"
-data["subjectName"] = "sub-01"
-data["subjectInternalID"] = None
-data["subjectStateNum"] = 1
-data["subjectStateNames"] = None
+data["specimenType"] = "subject"
+data["name"] = "sub-01"
+data["internalID"] = None
+data["timePoint"] = 1
+data["timePointName"] = None
 data["strainName"] = None
 data["strainAtid"] = None
 data["biologicalSex"] = "female"
 data["ageCategory"] = "adult"
-data["subjectAttribute"] = "awake, control"
+data["ageValue"] = "6"
+data["ageUnit"] = "week"
+data["weightValue"] = "130"
+data["weightUnit"] = "gram"
+data["attribute"] = "awake"
+data["pathology"] = None
+data["isPartOf"] = None
+data["descendedFrom"] = None
+
 
 df = pd.DataFrame(data, index=['i',])
 

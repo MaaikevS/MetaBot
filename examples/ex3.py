@@ -1,69 +1,33 @@
 # -*- coding: utf-8 -*-
-
 """
 Created Feb 2022
 
 
-Example script for creating subject and tissue sample instances
+Example script to upload instances to the Knowledge Graph Editor
 
 
 @author: mvanswieten
 
 """
 
+import glob
 import os
-import pandas as pd
-from datetime import datetime
+from getpass import getpass
 from metabot import openMINDS_wrapper
 
-# Initialise empty dataframe to store metadata in
-data = {}
-
-# Fill in the metadata for the subject
-data["subjectType"] = "subject"
-data["subjectName"] = "sub-01"
-data["subjectInternalID"] = None
-data["subjectStateNum"] = 1
-data["subjectStateNames"] = None
-data["strainName"] = None
-data["strainAtid"] = None
-data["biologicalSex"] = "female"
-data["ageCategory"] = "adult"
-data["subjectAttribute"] = "awake, control"
-
-# Fill in the metadata for the sample
-data["specimenType"] = "tsc"
-data["sampleName"] = "sub-01_layer1"
-data["sampleInternalID"] = None
-data["sampleType"] = "tissueSlice"
-data["region"] = "WHSSD_brain"
-data["origin"] = "brain"
-data["quantity"] = 10
-data["sampleStateNum"] = 2
-data["sampleStateNames"] = "vglut1, vgat"
-data["sampleAttribute"] = "stained"
-
-df = pd.DataFrame(data, index=[0])
-
-# Make output folder is it does not exist yet
-output_path = "createdInstances" + "_" + datetime.now().strftime("%d%m%Y_%H%M") + "\\"
-if os.path.isdir(output_path):
-    print("Output folder already exists")
-else:
-    print("Output folder does not exist, making folder")        
-    os.mkdir(output_path) 
-    
-# Call the openMINDS wrapper
 w = openMINDS_wrapper()
-    
-# Create subjects instances based on the data provided
-subject_data = w.makeSubjectCollections(df, output_path) 
 
-# join the new information in a new df
-df_merged = pd.concat([df,subject_data.studiedState, subject_data.subjectAtid], axis=1)
+# Specify the folder where the instances are stored
+file_location = os.getcwd()
+fpath = input("Please define you path: ")
+     
+fpath = fpath + "\\" 
+os.chdir(fpath)
+token = getpass(prompt="Please enter your KG token (or Enter to skip uploading to the KG): ")
+instances_fnames = glob.glob(fpath + "*\\*", recursive = True)
 
-# Create sample instances based on the data provided
-sample_data = w.makeSampleCollections(df_merged, output_path)  
+# Select the space the instances need to be uploaded to, e.g. dataset
+space_name = "dataset"
 
-
-  
+# Upload the instances in the folder you selected
+response = w.upload(instances_fnames, token, space_name)  
