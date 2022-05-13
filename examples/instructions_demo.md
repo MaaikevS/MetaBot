@@ -8,7 +8,7 @@ In the example folder there is a file called "demo_createSpecimen.py". With this
 ## How to use ##
 
 To create instances for samples (either tissue sample or tissue sample collections) from subject that are already in the KG editor, you need to following files:
-- ``specimen_template.xlsx`` (template file provided)
+- ``example_template.xlsx`` (template file provided)
 - ``demo_createSpecimen.py`` (python script to create the instances)
 
 ### Template .xlsx file: ###
@@ -59,7 +59,7 @@ The easiest is if you put the script in the same folder as the subject and speci
 
 Additional information to answer the questions:
 1. "Is this where the files are stored?" < It prints the path to where the python file is located. If all files are in the same folder, press "y". If this is not the case, you can define the path yourself by answering the next question: "Please define you path: ".
-2. "What is the name of your specimen info file (e.g. specimen_template.xlsx)? " < Please specify the name of your sample info file. Make sure you saved it as a .xlsx file. The ".xlsx" does not have to be added.
+2. "What is the name of your specimen info file (e.g. specimen_template.xlsx)? " < Please specify the name of your sample info file. Make sure you saved it as a .xlsx file. The ".xlsx" does not have to be added when you provide the name.
 
 The script updates you on which instances are being created and whether information is missing. If information is required and not found in the template file, it tells you to go back to the file and check if the information was entered correctly.
 
