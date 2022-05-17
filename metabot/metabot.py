@@ -22,9 +22,7 @@ Methods:
 @author: mvanswieten
 """
 
-# from itertools import count
 import json
-# from lib2to3.pgen2 import token
 import openMINDS
 import openMINDS.version_manager
 import pandas as pd
@@ -80,14 +78,12 @@ class openMINDS_wrapper:
 
         state_dict = {}
         subject_dict = {} 
-        specimen_uuid = []
-        state_uuid = []
         for sub in range(len(uniqueSubs)):
             
             # Print the name of the instance
             print("\n Creating instances for subject: " + str(uniqueSubs[sub]) + "\n")
             
-            subject_name = uniqueSubs[sub]
+            subject_name = str(uniqueSubs[sub])
                     
             # Define the openMINDS function based on the specimenType
             if df.specimenType[sub] == "subject" :
@@ -117,42 +113,41 @@ class openMINDS_wrapper:
             states = []  
             for state_num in range(len(stateName)):  
                 print("creating state " + str(stateName[state_num]) + " for subject " + str(subject_name))
-                state_dict[subject_name] = getattr(mycol, statemethod)(
+                state_dict[stateName[state_num]] = getattr(mycol, statemethod)(
                     ageCategory = [{"@id" : "https://openminds.ebrains.eu/instances/ageCategory/" + stateInfo.ageCategory[state_num]}])    
-                mycol.get(state_dict[subject_name]).lookupLabel = stateName[state_num]
+                mycol.get(state_dict[stateName[state_num]]).lookupLabel = stateName[state_num]
                 
                 # If state attribute is defined, add to collection
                 attributeName = []
                 if pd.isnull(stateInfo.attribute[state_num]):
                     print("No subject attribute defined")
                     attribute = None
-                    mycol.get(state_dict[subject_name]).attribute = attribute
+                    mycol.get(state_dict[stateName[state_num]]).attribute = attribute
                 else:
                     if stateInfo.attribute[state_num].find(','):
                         for attributes in stateInfo.attribute[state_num].split(","):
                             attributeName.append({"@id": "https://openminds.ebrains.eu/instances/subjectAttribute/" + str(attributes.strip())})
-                        mycol.get(state_dict[subject_name]).attribute = attributeName
+                        mycol.get(state_dict[stateName[state_num]]).attribute = attributeName
                         attribute = stateInfo.attribute[state_num]
                     else:
                         attribute = stateInfo.attribute[state_num]
-                        mycol.get(state_dict[subject_name]).attribute = [{"@id" : "https://openminds.ebrains.eu/instances/subjectAttribute/" + str(attribute)}]
+                        mycol.get(state_dict[stateName[state_num]]).attribute = [{"@id" : "https://openminds.ebrains.eu/instances/subjectAttribute/" + str(attribute)}]
 
-                states.append({"@id": kg_prefix + state_dict[subject_name].split("/")[-1]})
-                state_uuid.append(state_dict[subject_name].split("/")[-1])
+                states.append({"@id": kg_prefix + state_dict[stateName[state_num]].split("/")[-1]})
 
                 # Add the age of the animal
                 if pd.isnull(stateInfo.ageValue[state_num]) and pd.isnull(stateInfo.ageUnit[state_num]):
                     print("No age information defined")
                 elif str(stateInfo.ageValue[state_num]).find("-") != -1:
                     ages = stateInfo.ageValue[state_num].split("-")
-                    mycol.get(state_dict[subject_name]).age = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValueRange",
+                    mycol.get(state_dict[stateName[state_num]]).age = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValueRange",
                                                 "minValueUnit" : {"@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/" + str(stateInfo.ageUnit[state_num])},
                                                 "maxValueUnit" : {"@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/" + str(stateInfo.ageUnit[state_num])}, 
                                                 "minValue" : int(ages[0].strip()),
                                                 "maxValue" : int(ages[1].strip())
                                                 }]
                 else:
-                    mycol.get(state_dict[subject_name]).age = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValue",
+                    mycol.get(state_dict[stateName[state_num]]).age = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValue",
                                                                 "unit" : {"@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/" + str(stateInfo.ageUnit[state_num])}, 
                                                                 "value" : int(stateInfo.ageValue[state_num])
                                                             }]
@@ -162,14 +157,14 @@ class openMINDS_wrapper:
                     print("No weight information defined")
                 elif str(stateInfo.weightValue[state_num]).find("-") != -1:
                     weights = stateInfo.weightValue[state_num].split("-")
-                    mycol.get(state_dict[subject_name]).weight = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValueRange",
+                    mycol.get(state_dict[stateName[state_num]]).weight = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValueRange",
                                                 "minValueUnit" : {"@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/" + str(stateInfo.weightUnit[state_num])},
                                                 "maxValueUnit" : {"@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/" + str(stateInfo.weightUnit[state_num])}, 
                                                 "minValue" : int(weights[0].strip()),
                                                 "maxValue" : int(weights[1].strip())
                                                 }]
                 else:
-                    mycol.get(state_dict[subject_name]).weight = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValue",
+                    mycol.get(state_dict[stateName[state_num]]).weight = [{"@type" : "https://openminds.ebrains.eu/core/QuantitativeValue",
                                                                 "unit" : {"@id": "https://openminds.ebrains.eu/instances/unitOfMeasurement/" + str(stateInfo.weightUnit[state_num])}, 
                                                                 "value" : int(stateInfo.weightValue[state_num])
                                                                 }]
@@ -182,7 +177,7 @@ class openMINDS_wrapper:
                         for st in range(len(stateInfo.descendedFrom_uuid[state_num])):
                             descendedState.append({"@id": kg_prefix + stateInfo.descendedFrom_uuid[state_num][st]})
                             
-                        mycol.get(state_dict[subject_name]).descendedFrom = descendedState
+                        mycol.get(state_dict[stateName[state_num]]).descendedFrom = descendedState
 
             #### Subject ####
             print("Creating subject " + str(subject_name))
@@ -230,12 +225,17 @@ class openMINDS_wrapper:
             
             mycol.save(output_path) 
         
-            for x in range(numberOfStates):
-                specimen_uuid.append(subject_dict[subject_name].split("/")[-1])
+        for x in range(len(data)):
+            if not 'specimen_uuid' in data.columns:
+                data.insert(x, 'specimen_uuid', '')
+            data.loc[x, "specimen_uuid"] = subject_dict[str(data["name"][x])].split("/")[-1]
+            if not 'state_uuid' in data.columns:
+                data.insert(x, 'state_uuid', '')
+            if pd.isnull(str(data.timePointName[x])):
+                data.loc[x, "state_uuid"] = state_dict[str(data["name"][x]) + "_" + "state-0" + str(data.timePoint[x])].split("/")[-1]
+            else:
+                data.loc[x, "state_uuid"] = state_dict[str(data["timePointName"][x])].split("/")[-1]
 
-        data["specimen_uuid"] = specimen_uuid
-        data["state_uuid"] = state_uuid
-            
         filename = output_path + df.specimenType[sub] + '_created.csv'
         data.to_csv(filename, index = False, header=True)  
       
@@ -263,26 +263,23 @@ class openMINDS_wrapper:
         uniqueSamples = df.name.unique()
         state_dict = {}
         sample_dict = {} 
-        specimen_uuid = []
-        state_uuid = []
         for sample in range(len(uniqueSamples)):
             
-            sample_name = uniqueSamples[sample]
+            sample_name = str(uniqueSamples[sample])
             stateInfo = df[df.name == uniqueSamples[sample]].reset_index(drop=True)
 
             # Select all the states that belong to one sample
             print("\n Creating states for tissue sample " + str(sample_name) + "\n")
 
-            sampleStates = stateInfo.timePointName.to_list()
+            sampleStates = stateInfo.timePoint.to_list()
             
             stateName = []
             states = []  
-            # stateIDs = []
             for state in range(len(sampleStates)):
 
                 # Find the names of the sample states, if no name was given, make generic name
                 if pd.isnull(stateInfo.timePointName[state]):
-                    print(">>> No subject state name defined, making generic one <<<")
+                    print(">>> No sample state name defined, making generic one <<<")
                     stateName.append(str(sample_name) + "_" + "state-0" + str(stateInfo.timePoint[state]))
                 else:
                     stateName.append(str(stateInfo.timePointName[state]))
@@ -300,14 +297,14 @@ class openMINDS_wrapper:
 
                 # Create sample state(s)                    
                 print("creating state " + str(stateName[state]))
-                state_dict[sample_name] = getattr(mycol, statemethod)()    
-                mycol.get(state_dict[sample_name]).lookupLabel = stateName[state]
+                state_dict[stateName[state]] = getattr(mycol, statemethod)()    
+                mycol.get(state_dict[stateName[state]]).lookupLabel = stateName[state]
 
                 if pd.isnull(df.descendedFrom[state]):
                     print("No 'descended from' information defined")
                 else:
                     if 'descendedFrom_uuid' in df.columns:
-                        mycol.get(state_dict[sample_name]).descendedFrom = [{"@id" : kg_prefix + stateInfo.descendedFrom_uuid[state]}]
+                        mycol.get(state_dict[stateName[state]]).descendedFrom = [{"@id" : kg_prefix + stateInfo.descendedFrom_uuid[state]}]
                     
                 # If state attribute is defined, add to collection
                 attribute = []
@@ -318,15 +315,11 @@ class openMINDS_wrapper:
                     if stateInfo.attribute[state].find(','):
                         for attributes in stateInfo.attribute[state].split(","):
                             attribute.append({"@id": "https://openminds.ebrains.eu/instances/tissueSampleAttribute/" + str(attributes.strip())})
-                        # mycol.get(state_dict[sample_name]).attribute = attribute
-                        # attribute = stateInfo.attribute[state]
                     else:
                         attribute = [{"@id" : "https://openminds.ebrains.eu/instances/tissueSampleAttribute/" + str(stateInfo.attribute[state])}]
-                mycol.get(state_dict[sample_name]).attribute = attribute
+                mycol.get(state_dict[stateName[state]]).attribute = attribute
         
-                states.append({"@id": kg_prefix + state_dict[sample_name].split("/")[-1]})
-                # stateIDs.append(state_dict[sample_name].split("/")[-1])                 
-                state_uuid.append(state_dict[sample_name].split("/")[-1])
+                states.append({"@id": kg_prefix + state_dict[stateName[state]].split("/")[-1]})
 
                 # Save the instance in the output folder
                 mycol.save(output_path)     
@@ -406,14 +399,19 @@ class openMINDS_wrapper:
                 if 'isPartOf_uuid' in df.columns:
                     mycol.get(sample_dict[sample_name]).isPartOf = [{"@id" : "https://kg.ebrains.eu/api/instances/" + df.isPartOf_uuid[state]}]
 
-            for x in range(len(sampleStates)):
-                specimen_uuid.append(sample_dict[sample_name].split("/")[-1])
-
             # Save the instance in the output folder
             mycol.save(output_path) 
 
-        data["specimen_uuid"] = specimen_uuid
-        data["state_uuid"] = state_uuid
+        for x in range(len(data)):
+            if not 'specimen_uuid' in data.columns:
+                data.insert(x, 'specimen_uuid', '')
+            data.loc[x, "specimen_uuid"] = sample_dict[str(data["name"][x])].split("/")[-1]
+            if not 'state_uuid' in data.columns:
+                data.insert(x, 'state_uuid', '')
+            if pd.isnull(data.timePointName[x]):
+                data.loc[x, "state_uuid"] = state_dict[str(data["name"][x]) + "_" + "state-0" + str(data.timePoint[x])].split("/")[-1]
+            else:
+                data.loc[x, "state_uuid"] = state_dict[str(data["timePointName"][x])].split("/")[-1]
 
         filename = output_path + df.specimenType[sample] + '_created.csv'
         data.to_csv(filename, index = False, header=True)        
