@@ -33,7 +33,7 @@ if answer == "y":
 elif answer == "n":
     fpath = input("Please define you path: ")
      
-fpath = fpath + "\\" 
+fpath = os.path.join(fpath, "")
 os.chdir(fpath)
 
 # Make output folder is it does not exist yet
