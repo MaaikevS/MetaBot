@@ -169,6 +169,13 @@ class openMINDS_wrapper:
                                                                 "value" : int(stateInfo.weightValue[state_num])
                                                                 }]
                 
+                if pd.isnull(stateInfo.remarks[state_num]):
+                    print("No remarks added")
+                    additionalRemarks = None
+                else:
+                    additionalRemarks = str(stateInfo.remarks[state_num])
+                mycol.get(state_dict[stateName[state_num]]).additionalRemarks = additionalRemarks
+
                 if pd.isnull(stateInfo.descendedFrom[state_num]):
                     print("No 'descended from' information defined")
                 else:
@@ -319,6 +326,13 @@ class openMINDS_wrapper:
                         attribute = [{"@id" : "https://openminds.ebrains.eu/instances/tissueSampleAttribute/" + str(stateInfo.attribute[state])}]
                 mycol.get(state_dict[stateName[state]]).attribute = attribute
         
+                if pd.isnull(stateInfo.remarks[state]):
+                    print("No remarks added")
+                    additionalRemarks = None
+                else:
+                    additionalRemarks = str(stateInfo.remarks[state])
+                mycol.get(state_dict[stateName[state]]).additionalRemarks = additionalRemarks
+
                 states.append({"@id": kg_prefix + state_dict[stateName[state]].split("/")[-1]})
 
                 # Save the instance in the output folder
